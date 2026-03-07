@@ -49,7 +49,7 @@ export default async function Home() {
         <Challenge22 />
         <QuoteBanner />
         <FootprintQuiz />
-        <MealBuilder />
+        {/* <MealBuilder /> */}
         <StreakTracker />
         <PledgeWall   initialPledges={pledges} />
         <DareAFriend />
