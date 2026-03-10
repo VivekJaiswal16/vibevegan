@@ -1,5 +1,5 @@
 'use client'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useIsMobile } from '@/hooks/useIsMobile'
 
 const DEFAULT_PLEDGES = [
@@ -7,18 +7,25 @@ const DEFAULT_PLEDGES = [
   { id: 'd2', name: 'Arjun K.', reason: 'Climate change is real and my diet is part of the problem.' },
   { id: 'd3', name: 'Naina M.', reason: 'I watched Dominion and I could not unsee it.' },
   { id: 'd4', name: 'Rahul V.', reason: 'My health, my choice, my planet.' },
-  { id: 'd5', name: 'Simran D.',reason: 'If not us, who? If not now, when?' },
+  { id: 'd5', name: 'Simran D.', reason: 'If not us, who? If not now, when?' },
   { id: 'd6', name: 'Karan B.', reason: 'Took the 3-min challenge. Changed everything.' },
 ]
 
 export default function PledgeWall({ initialPledges = [] }) {
   const mobile  = useIsMobile()
-  const merged  = initialPledges.length > 0 ? initialPledges : DEFAULT_PLEDGES
-  const [pledges, setPledges] = useState(merged)
+  const [pledges, setPledges] = useState(initialPledges.length > 0 ? initialPledges : DEFAULT_PLEDGES)
   const [name,    setName]    = useState('')
   const [reason,  setReason]  = useState('')
   const [loading, setLoading] = useState(false)
   const [error,   setError]   = useState('')
+
+  // Always fetch fresh from API on mount — covers the case where SSR data was empty
+  useEffect(() => {
+    fetch('/api/pledges')
+      .then(r => r.ok ? r.json() : null)
+      .then(data => { if (data && data.length > 0) setPledges(data) })
+      .catch(() => {})
+  }, [])
 
   async function addPledge() {
     if (!name.trim() || !reason.trim()) { setError('Please fill in both fields.'); return }
@@ -36,7 +43,11 @@ export default function PledgeWall({ initialPledges = [] }) {
     } finally { setLoading(false) }
   }
 
-  const inputStyle = { background: 'var(--card)', border: '1.5px solid rgba(255,255,255,.08)', borderRadius: 12, padding: '14px 18px', color: 'var(--text)', fontFamily: "'DM Sans',sans-serif", fontSize: '.92rem', outline: 'none', width: '100%' }
+  const inputStyle = {
+    background: 'var(--card)', border: '1.5px solid rgba(255,255,255,.08)',
+    borderRadius: 12, padding: '14px 18px', color: 'var(--text)',
+    fontFamily: "'DM Sans',sans-serif", fontSize: '.92rem', outline: 'none', width: '100%',
+  }
 
   return (
     <section id="pledge" style={{ padding: '80px 5%', background: 'var(--dark)' }}>
@@ -47,9 +58,9 @@ export default function PledgeWall({ initialPledges = [] }) {
       </div>
 
       <div className="reveal">
-        {/* Input — stacked on mobile */}
         <div style={{ marginTop: 40, display: 'flex', flexDirection: mobile ? 'column' : 'row', gap: 12 }}>
-          <input value={name} onChange={e => setName(e.target.value)} maxLength={60} placeholder="Your name" style={{ ...inputStyle, width: mobile ? '100%' : 200 }}
+          <input value={name} onChange={e => setName(e.target.value)} maxLength={60} placeholder="Your name"
+            style={{ ...inputStyle, width: mobile ? '100%' : 200 }}
             onFocus={e => e.target.style.borderColor = 'var(--green)'}
             onBlur={e  => e.target.style.borderColor = 'rgba(255,255,255,.08)'}
           />
@@ -65,7 +76,6 @@ export default function PledgeWall({ initialPledges = [] }) {
         </div>
         {error && <p style={{ color: 'var(--accent)', fontSize: '.85rem', marginTop: 8 }}>{error}</p>}
 
-        {/* Pledge wall — 1 col on mobile, 3 on desktop */}
         <div style={{ marginTop: 32, columns: mobile ? 1 : 3, gap: 16 }}>
           {pledges.map((p, i) => (
             <div key={p.id || i} style={{ breakInside: 'avoid', background: 'var(--card)', borderRadius: 14, padding: '20px 22px', marginBottom: 16, border: '1px solid rgba(255,255,255,.04)' }}>

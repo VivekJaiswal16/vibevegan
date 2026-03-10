@@ -1,5 +1,5 @@
 'use client'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useIsMobile } from '@/hooks/useIsMobile'
 
 const FALLBACK_EVENTS = [
@@ -17,8 +17,16 @@ function formatDate(dateStr) {
 
 export default function Events({ initialEvents = [] }) {
   const mobile = useIsMobile()
-  const events = initialEvents.length > 0 ? initialEvents : FALLBACK_EVENTS
-  const [rsvp, setRsvp] = useState(new Set())
+  const [events, setEvents] = useState(initialEvents.length > 0 ? initialEvents : FALLBACK_EVENTS)
+  const [rsvp,   setRsvp]   = useState(new Set())
+
+  // Always fetch fresh from API on mount
+  useEffect(() => {
+    fetch('/api/events')
+      .then(r => r.ok ? r.json() : null)
+      .then(data => { if (data && data.length > 0) setEvents(data) })
+      .catch(() => {})
+  }, [])
 
   function toggleRSVP(id) {
     setRsvp(prev => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n })
@@ -38,12 +46,10 @@ export default function Events({ initialEvents = [] }) {
           const done = rsvp.has(e.id)
           return (
             <div key={e.id} style={{ background: 'var(--card)', borderRadius: 18, padding: mobile ? '20px 18px' : '28px 32px', display: 'flex', flexDirection: mobile ? 'column' : 'row', alignItems: mobile ? 'flex-start' : 'center', gap: mobile ? 16 : 24, border: '1px solid rgba(255,255,255,.04)', flexWrap: 'wrap' }}>
-              {/* Date badge */}
               <div style={{ background: 'rgba(61,219,110,.1)', border: '1px solid rgba(61,219,110,.2)', borderRadius: 14, padding: '10px 16px', textAlign: 'center', minWidth: 64, flexShrink: 0 }}>
                 <div style={{ fontFamily: "'Syne',sans-serif", fontSize: '1.6rem', fontWeight: 800, color: 'var(--green)', lineHeight: 1 }}>{day}</div>
                 <div style={{ fontSize: '.7rem', fontWeight: 700, letterSpacing: 1.5, textTransform: 'uppercase', color: 'var(--sub)' }}>{mon}</div>
               </div>
-              {/* Info */}
               <div style={{ flex: 1 }}>
                 <div style={{ fontFamily: "'Syne',sans-serif", fontSize: '1rem', fontWeight: 700, marginBottom: 6 }}>{e.title}</div>
                 <div style={{ color: 'var(--sub)', fontSize: '.82rem', display: 'flex', gap: 14, flexWrap: 'wrap' }}>
@@ -51,7 +57,6 @@ export default function Events({ initialEvents = [] }) {
                   {e.time_range && <span>⏰ {e.time_range}</span>}
                 </div>
               </div>
-              {/* Badges + RSVP */}
               <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
                 <span style={{ padding: '5px 12px', borderRadius: 100, fontSize: '.75rem', fontWeight: 600, whiteSpace: 'nowrap', ...(e.is_free ? { background: 'rgba(61,219,110,.1)', color: 'var(--green)', border: '1px solid rgba(61,219,110,.2)' } : { background: 'rgba(255,107,53,.1)', color: 'var(--accent)', border: '1px solid rgba(255,107,53,.2)' }) }}>
                   {e.is_free ? 'Free' : 'Paid'}
